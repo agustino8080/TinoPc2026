@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00ffcc">
+    <title>TINO TV MASTER PRO - PC Station v11.0</title>
+
+    <style>
+        :root { --neon: #00ffcc; --bg: #000; --card: #121216; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        html, body { background: #000; color: #fff; width: 100vw; height: 100vh; overflow: hidden; }
+
+        .layout-container { display: grid; grid-template-columns: 240px 1fr; width: 100%; height: 100%; }
+
+        /* BANNER IZQUIERDO (SCROLL DE 17 PNGs) */
+        .side-banner { background: #000; border-right: 1px solid #1a1a1a; overflow: hidden; height: 100vh; cursor: pointer; }
+        .image-scroll { display: flex; flex-direction: column; animation: scroll-up 80s linear infinite; }
+        .ad-box { position: relative; width: 100%; border-bottom: 2px solid var(--neon); background: #050505; }
+        .ad-box img { width: 100%; height: 350px; object-fit: cover; display: block; }
+        @keyframes scroll-up { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+
+        /* CUERPO PRINCIPAL */
+        .app-shell { display: flex; flex-direction: column; height: 100vh; background: #000; overflow-y: auto; }
+        header { padding: 15px 25px; background: #000; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 2000; }
+        .logo { font-size: 20px; font-weight: 900; color: var(--neon); text-transform: uppercase; letter-spacing: 2px; }
+
+        .nav-controls { display: flex; gap: 15px; }
+        .tv-select { background: #111; color: #fff; border: 1px solid #333; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: 900; outline: none; cursor: pointer; transition: 0.3s; min-width: 140px; }
+        .tv-select:hover { border-color: var(--neon); box-shadow: 0 0 10px rgba(0,255,204,0.3); }
+
+        /* REPRODUCTOR MASTER PC */
+        .player-wrapper { width: 100%; aspect-ratio: 16/9; position: relative; background: #000; overflow: hidden; border-bottom: 2px solid var(--neon); flex-shrink: 0; }
+
+        /* MASCARA SUPERIOR (RSS) */
+        .mask-top { position: absolute; top: 0; left: 0; width: 100%; height: 45px; background: #000; z-index: 150; display: flex; align-items: center; border-bottom: 1px solid var(--neon); overflow: hidden; }
+        .ticker { white-space: nowrap; font-size: 14px; font-weight: 900; color: var(--neon); display: inline-block; animation: ticker-move 50s linear infinite; }
+        @keyframes ticker-move { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        /* MASCARA DERECHA (VIDEO TAPA CHAT) */
+        .mask-right-video { position: absolute; top: 45px; right: 0; width: 33%; height: calc(100% - 90px); background: #000; z-index: 100; border-left: 2px solid #222; overflow: hidden; cursor: pointer; }
+        .mask-right-video video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1s; position: absolute; }
+        .mask-right-video video.active { opacity: 1; }
+
+        /* MASCARA INFERIOR (TAPA REDES) */
+        .mask-bottom { position: absolute; bottom: 0; left: 0; width: 68%; height: 45px; background: #000; z-index: 100; border-top: 1px solid var(--neon); overflow: hidden; }
+        .bottom-scroll { display: flex; animation: scroll-x 25s linear infinite; height: 100%; }
+        .bottom-scroll img { height: 100%; padding: 5px; }
+        @keyframes scroll-x { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* REPRODUCTOR AISLADO */
+        .player-inner { position: absolute; top: 0; left: 0; width: 125%; height: 145%; transform: translate(-6%, -5%); z-index: 1; }
+        iframe { width: 100%; height: 100%; border: none; background: #000; }
+
+        /* DISPARADOR DE SEÑAL */
+        .tv-trigger { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 500; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .btn-play { background: var(--neon); color: #000; border: none; padding: 25px 60px; border-radius: 12px; font-weight: 900; font-size: 24px; cursor: pointer; box-shadow: 0 0 40px rgba(0,255,204,0.4); }
+
+        footer { padding: 50px 20px; text-align: center; color: #bbb; font-size: 12px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid #111; margin-top: auto; }
+        footer span { color: var(--neon); }
+
+        @media (max-width: 1100px) { .layout-container { grid-template-columns: 200px 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="layout-container">
+    <div class="side-banner" onclick="window.open('https://sportivo.whacka.app/', '_blank')">
+        <div class="image-scroll" id="left-ads"></div>
+    </div>
+
+    <div class="app-shell">
+        <header>
+            <div class="logo">TINO TV MASTER</div>
+            <div class="nav-controls">
+                <select class="tv-select" id="sel-deportes" onchange="quickPlay(this.value)"><option value="">⚽ DEPORTES</option></select>
+                <select class="tv-select" id="sel-tv" onchange="quickPlay(this.value)"><option value="">📺 TV ABIERTA</option></select>
+                <select class="tv-select" id="sel-cine" onchange="quickPlay(this.value)"><option value="">🎬 CINE</option></select>
+            </div>
+        </header>
+
+        <div class="player-wrapper">
+            <div class="mask-top"><div class="ticker" id="live-ticker">CONECTANDO NOTICIAS EN VIVO...</div></div>
+            <div class="mask-right-video" onclick="window.open('https://sportivo.whacka.app/', '_blank')">
+                <video id="v1" autoplay muted loop playsinline class="active"><source src="images/video1.mp4"></video>
+                <video id="v2" muted loop playsinline><source src="images/video2.mp4"></video>
+            </div>
+            <div class="mask-bottom"><div class="bottom-scroll" id="bottom-ads"></div></div>
+            <div id="tv-shield" class="tv-trigger">
+                <button class="btn-play" id="btn-focus" onclick="startChannel()">▶ CONECTAR SEÑAL SEGURA</button>
+                <p style="color:#444; font-size:11px; margin-top:15px; font-weight:bold;">ANTI-POPUPS & MALWARE BLOCK ACTIVE</p>
+            </div>
+            <div class="player-inner" id="zoom-engine">
+                <iframe id="tv-frame" src="" allowfullscreen allow="autoplay; encrypted-media" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+            </div>
+        </div>
+
+        <footer>&copy; 2026 - <span>AGUSTÍN PIZARRO</span>. TODOS LOS DERECHOS RESERVADOS.</footer>
+    </div>
+</div>
+
+<script src="tino_tv_data.js"></script>
+<script>
+    let currentUrl = "";
+
+    function setupAssets() {
+        const left = document.getElementById('left-ads'), btm = document.getElementById('bottom-ads');
+        let lHtml = "", bHtml = "";
+        for(let i=1; i<=17; i++) {
+            const path = `images/banner${i}.png`;
+            lHtml += `<div class="ad-box"><img src="${path}"></div>`;
+            bHtml += `<img src="${path}">`;
+        }
+        left.innerHTML = lHtml + lHtml;
+        btm.innerHTML = bHtml + bHtml;
+    }
+
+    function switchVideo() {
+        const v1 = document.getElementById('v1'), v2 = document.getElementById('v2');
+        if(v1.classList.contains('active')) { v1.classList.remove('active'); v2.classList.add('active'); v2.play(); }
+        else { v2.classList.remove('active'); v1.classList.add('active'); v1.play(); }
+    }
+
+    async function updateNews() {
+        try {
+            const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.marca.com/rss/futbol.xml")}`);
+            const data = await res.json();
+            if (data.status === 'ok') document.getElementById('live-ticker').innerText = data.items.map(item => `⚽ ${item.title.toUpperCase()}`).join(" --- ") + " --- BIENVENIDO A TINO TV MASTER --- ";
+        } catch (e) { document.getElementById('live-ticker').innerText = "⚽ BIENVENIDO A TINO TV MASTER --- "; }
+    }
+
+    function populateSelects(db) {
+        const sDep = document.getElementById('sel-deportes'), sTv = document.getElementById('sel-tv'), sCine = document.getElementById('sel-cine');
+        db.forEach(canal => {
+            const opt = document.createElement('option');
+            opt.value = `${canal.source}|${canal.id}`;
+            opt.innerText = canal.name;
+            if(canal.cat === "DEPORTES") sDep.appendChild(opt);
+            else if(canal.cat === "TV ABIERTA") sTv.appendChild(opt);
+            else if(canal.cat === "CINE") sCine.appendChild(opt);
+        });
+    }
+
+    function quickPlay(val) {
+        if(!val) return;
+        const [source, id] = val.split('|');
+        const engine = document.getElementById('zoom-engine');
+        if (source === "cablevision") {
+            currentUrl = `https://www.cablevisionhd.com/${id}-en-vivo.php`;
+            engine.style.display = "block";
+        } else {
+            currentUrl = source === "ksd" ? `https://embed.ksdjugfsddeports.com/embed/${id}.html` : `https://streamx550.com/global1.php?channel=${id}`;
+            engine.style.display = "block";
+        }
+        document.getElementById('tv-frame').src = "";
+        document.getElementById('tv-shield').style.display = 'flex';
+    }
+
+    function startChannel() { if(currentUrl) { document.getElementById('tv-frame').src = currentUrl; document.getElementById('tv-shield').style.display = 'none'; } }
+
+    window.onload = () => { setupAssets(); populateSelects(KSD_CHANNELS); updateNews(); setInterval(updateNews, 900000); setInterval(switchVideo, 12000); };
+</script>
+</body>
+</html>
